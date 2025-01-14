@@ -36,10 +36,6 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('role', 1)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError(('Superuser must have is_staff=True.'))
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError(('Superuser must have is_superuser=True.'))
         return self.create_user(email, password, **extra_fields)
 
 
@@ -67,18 +63,22 @@ class CustomUser(AbstractBaseUser):
         param is_active: user role, default value False
         type updated_at: bool
     """
-    first_name = models.CharField(max_length=20, default=None)
-    last_name = models.CharField(max_length=20, default=None)
-    middle_name = models.CharField(max_length=20, default=None)
+    first_name = models.CharField(max_length=20, blank=True, null=True, default=None)
+    last_name = models.CharField(max_length=20, blank=True, null=True, default=None)
+    middle_name = models.CharField(max_length=20, blank=True, null=True, default=None)
     email = models.CharField(max_length=100, unique=True, default=None)
     password = models.CharField(default=None, max_length=255)
     created_at = models.DateTimeField(editable=False, auto_now=datetime.datetime.now())
     updated_at = models.DateTimeField(auto_now=datetime.datetime.now())
     role = models.IntegerField(choices=ROLE_CHOICES, default=0)
     is_active = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)  # Нове поле
+    is_superuser = models.BooleanField(default=False)  # Нове поле
     id = models.AutoField(primary_key=True)
 
     USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
     objects = CustomUserManager()
 
     def __str__(self):
@@ -89,6 +89,18 @@ class CustomUser(AbstractBaseUser):
                  user role, user is_active
         """
         return f"'id': {self.id}, 'first_name': '{self.first_name}', 'middle_name': '{self.middle_name}', 'last_name': '{self.last_name}', 'email': '{self.email}', 'created_at': {int(self.created_at.timestamp())}, 'updated_at': {int(self.updated_at.timestamp())}, 'role': {self.role}, 'is_active': {self.is_active}"  # 'password': '{self.password}', \
+
+    def has_perm(self, perm, obj=None):
+        """
+        Does the user have a specific permission?
+        """
+        return self.is_superuser
+
+    def has_module_perms(self, app_label):
+        """
+        Does the user have permissions to view the app `app_label`?
+        """
+        return self.is_superuser
 
     def __repr__(self):
         """
